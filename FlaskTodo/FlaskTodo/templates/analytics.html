@@ -1,0 +1,342 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics - Personal Finance Manager{% endblock %}
+
+{% block content %}
+<!-- Time Period Selector -->
+<div class="glass rounded-2xl p-6 mb-8">
+    <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+        <h1 class="text-2xl font-bold text-gray-800">📈 Financial Analytics</h1>
+        <div class="flex gap-4">
+            <select id="time-period" class="px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-primary focus:outline-none">
+                <option value="7">Last 7 Days</option>
+                <option value="30" selected>Last 30 Days</option>
+                <option value="90">Last 3 Months</option>
+                <option value="365">Last Year</option>
+            </select>
+            <button onclick="refreshAnalytics()" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-secondary transition">
+                🔄 Refresh
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+    <!-- Spending by Category -->
+    <div class="glass rounded-2xl p-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-4">🍰 Spending by Category</h2>
+        <div class="chart-container">
+            <canvas id="categoryChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Spending Trend -->
+    <div class="glass rounded-2xl p-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-4">📊 Spending Trend</h2>
+        <div class="chart-container">
+            <canvas id="trendChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Daily Average -->
+    <div class="glass rounded-2xl p-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-4">📅 Daily Spending Pattern</h2>
+        <div class="chart-container">
+            <canvas id="dailyChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Top Expenses -->
+    <div class="glass rounded-2xl p-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-4">💸 Largest Expenses</h2>
+        <div id="top-expenses" class="space-y-3">
+            <!-- Will be populated by JavaScript -->
+        </div>
+    </div>
+</div>
+
+<!-- Insights Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <!-- Spending Insights -->
+    <div class="glass rounded-2xl p-6">
+        <h3 class="text-lg font-bold text-gray-800 mb-4">💡 Insights</h3>
+        <div id="insights" class="space-y-3">
+            <!-- Will be populated by JavaScript -->
+        </div>
+    </div>
+
+    <!-- Category Analysis -->
+    <div class="glass rounded-2xl p-6">
+        <h3 class="text-lg font-bold text-gray-800 mb-4">📊 Category Analysis</h3>
+        <div id="category-analysis" class="space-y-3">
+            <!-- Will be populated by JavaScript -->
+        </div>
+    </div>
+
+    <!-- Spending Goals -->
+    <div class="glass rounded-2xl p-6">
+        <h3 class="text-lg font-bold text-gray-800 mb-4">🎯 Performance</h3>
+        <div id="performance" class="space-y-3">
+            <!-- Will be populated by JavaScript -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let categoryChart, trendChart, dailyChart;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeCharts();
+        loadAnalytics();
+        
+        document.getElementById('time-period').addEventListener('change', loadAnalytics);
+    });
+
+    function initializeCharts() {
+        // Category Chart (Doughnut)
+        const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+        categoryChart = new Chart(categoryCtx, {
+            type: 'doughnut',
+            data: {
+                labels: [],
+                datasets: [{
+                    data: [],
+                    backgroundColor: [],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        // Trend Chart (Line)
+        const trendCtx = document.getElementById('trendChart').getContext('2d');
+        trendChart = new Chart(trendCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Daily Spending',
+                    data: [],
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return FinanceApp.formatCurrency(value);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Daily Chart (Bar)
+        const dailyCtx = document.getElementById('dailyChart').getContext('2d');
+        dailyChart = new Chart(dailyCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+                datasets: [{
+                    label: 'Average Spending',
+                    data: [],
+                    backgroundColor: [
+                        '#ef4444', '#f97316', '#eab308', '#22c55e', 
+                        '#3b82f6', '#8b5cf6', '#ec4899'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return FinanceApp.formatCurrency(value);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function loadAnalytics() {
+        const days = parseInt(document.getElementById('time-period').value);
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - days);
+
+        // Filter expenses by time period
+        const filteredExpenses = FinanceApp.expenses.filter(expense => 
+            new Date(expense.date) >= cutoffDate
+        );
+
+        updateCategoryChart(filteredExpenses);
+        updateTrendChart(filteredExpenses, days);
+        updateDailyChart(filteredExpenses);
+        updateTopExpenses(filteredExpenses);
+        updateInsights(filteredExpenses);
+    }
+
+    function updateCategoryChart(expenses) {
+        const categoryTotals = {};
+        
+        expenses.forEach(expense => {
+            const category = FinanceApp.getCategoryById(expense.categoryId);
+            if (categoryTotals[category.id]) {
+                categoryTotals[category.id].amount += expense.amount;
+            } else {
+                categoryTotals[category.id] = {
+                    name: category.name,
+                    amount: expense.amount,
+                    color: category.color
+                };
+            }
+        });
+
+        const sorted = Object.values(categoryTotals).sort((a, b) => b.amount - a.amount);
+        
+        categoryChart.data.labels = sorted.map(cat => cat.name);
+        categoryChart.data.datasets[0].data = sorted.map(cat => cat.amount);
+        categoryChart.data.datasets[0].backgroundColor = sorted.map(cat => cat.color);
+        categoryChart.update();
+    }
+
+    function updateTrendChart(expenses, days) {
+        const dailyTotals = {};
+        
+        // Initialize all days with 0
+        for (let i = 0; i < days; i++) {
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            const dateStr = date.toISOString().split('T')[0];
+            dailyTotals[dateStr] = 0;
+        }
+
+        // Add actual expenses
+        expenses.forEach(expense => {
+            const dateStr = expense.date.split('T')[0];
+            if (dailyTotals.hasOwnProperty(dateStr)) {
+                dailyTotals[dateStr] += expense.amount;
+            }
+        });
+
+        const sortedDates = Object.keys(dailyTotals).sort();
+        const labels = sortedDates.map(date => new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+        const data = sortedDates.map(date => dailyTotals[date]);
+
+        trendChart.data.labels = labels;
+        trendChart.data.datasets[0].data = data;
+        trendChart.update();
+    }
+
+    function updateDailyChart(expenses) {
+        const dayTotals = [0, 0, 0, 0, 0, 0, 0]; // Mon-Sun
+        const dayCounts = [0, 0, 0, 0, 0, 0, 0];
+
+        expenses.forEach(expense => {
+            const day = new Date(expense.date).getDay();
+            const adjustedDay = day === 0 ? 6 : day - 1; // Convert Sunday=0 to Sunday=6
+            dayTotals[adjustedDay] += expense.amount;
+            dayCounts[adjustedDay]++;
+        });
+
+        // Calculate averages
+        const averages = dayTotals.map((total, index) => 
+            dayCounts[index] > 0 ? total / dayCounts[index] : 0
+        );
+
+        dailyChart.data.datasets[0].data = averages;
+        dailyChart.update();
+    }
+
+    function updateTopExpenses(expenses) {
+        const topExpenses = [...expenses]
+            .sort((a, b) => b.amount - a.amount)
+            .slice(0, 5);
+
+        const html = topExpenses.map(expense => {
+            const category = FinanceApp.getCategoryById(expense.categoryId);
+            return `
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-xl">${category.icon}</span>
+                        <div>
+                            <div class="font-semibold text-gray-800">${expense.description}</div>
+                            <div class="text-sm text-gray-600">${FinanceApp.formatDate(expense.date)}</div>
+                        </div>
+                    </div>
+                    <div class="font-bold text-primary">${FinanceApp.formatCurrency(expense.amount)}</div>
+                </div>
+            `;
+        }).join('');
+
+        document.getElementById('top-expenses').innerHTML = html || '<p class="text-gray-500">No expenses found</p>';
+    }
+
+    function updateInsights(expenses) {
+        const insights = [];
+        const total = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+        const avgDaily = total / parseInt(document.getElementById('time-period').value);
+
+        if (expenses.length > 0) {
+            insights.push(`💰 You spent ${FinanceApp.formatCurrency(total)} in total`);
+            insights.push(`📅 Average ${FinanceApp.formatCurrency(avgDaily)} per day`);
+            
+            // Find most expensive category
+            const categoryTotals = {};
+            expenses.forEach(exp => {
+                const cat = FinanceApp.getCategoryById(exp.categoryId);
+                categoryTotals[cat.id] = (categoryTotals[cat.id] || 0) + exp.amount;
+            });
+            
+            const topCategory = Object.entries(categoryTotals)
+                .sort(([,a], [,b]) => b - a)[0];
+            
+            if (topCategory) {
+                const cat = FinanceApp.getCategoryById(topCategory[0]);
+                insights.push(`🏆 Most spent on ${cat.name}: ${FinanceApp.formatCurrency(topCategory[1])}`);
+            }
+
+            // Spending frequency
+            const frequency = expenses.length / parseInt(document.getElementById('time-period').value);
+            insights.push(`📊 ${frequency.toFixed(1)} transactions per day`);
+        } else {
+            insights.push('📭 No expenses in this period');
+        }
+
+        const html = insights.map(insight => 
+            `<div class="p-3 bg-blue-50 rounded-lg text-sm">${insight}</div>`
+        ).join('');
+
+        document.getElementById('insights').innerHTML = html;
+    }
+
+    window.refreshAnalytics = function() {
+        loadAnalytics();
+        FinanceApp.showMessage('Analytics refreshed!');
+    };
+</script>
+{% endblock %}

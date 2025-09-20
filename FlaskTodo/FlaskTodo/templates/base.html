@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Personal Finance Manager{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#667eea',
+                        secondary: '#764ba2'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .nav-link {
+            transition: all 0.3s ease;
+        }
+        .nav-link:hover {
+            transform: translateY(-2px);
+        }
+        .nav-link.active {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-primary to-secondary min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white/10 backdrop-blur-md border-b border-white/20 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-8">
+                    <h1 class="text-xl font-bold text-white">💰 Finance Manager</h1>
+                    <div class="hidden md:flex space-x-4">
+                        <a href="/" class="nav-link text-white px-3 py-2 rounded-md text-sm font-medium" data-page="dashboard">
+                            📊 Dashboard
+                        </a>
+                        <a href="/analytics" class="nav-link text-white px-3 py-2 rounded-md text-sm font-medium" data-page="analytics">
+                            📈 Analytics
+                        </a>
+                        <a href="/budget" class="nav-link text-white px-3 py-2 rounded-md text-sm font-medium" data-page="budget">
+                            🎯 Budget
+                        </a>
+                        <a href="/categories" class="nav-link text-white px-3 py-2 rounded-md text-sm font-medium" data-page="categories">
+                            📂 Categories
+                        </a>
+                        <a href="/settings" class="nav-link text-white px-3 py-2 rounded-md text-sm font-medium" data-page="settings">
+                            ⚙️ Settings
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Mobile menu button -->
+                <div class="md:hidden">
+                    <button id="mobile-menu-btn" class="text-white hover:text-gray-300 focus:outline-none">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Mobile menu -->
+            <div id="mobile-menu" class="hidden md:hidden pb-4">
+                <div class="space-y-2">
+                    <a href="/" class="nav-link block text-white px-3 py-2 rounded-md text-base font-medium" data-page="dashboard">
+                        📊 Dashboard
+                    </a>
+                    <a href="/analytics" class="nav-link block text-white px-3 py-2 rounded-md text-base font-medium" data-page="analytics">
+                        📈 Analytics
+                    </a>
+                    <a href="/budget" class="nav-link block text-white px-3 py-2 rounded-md text-base font-medium" data-page="budget">
+                        🎯 Budget
+                    </a>
+                    <a href="/categories" class="nav-link block text-white px-3 py-2 rounded-md text-base font-medium" data-page="categories">
+                        📂 Categories
+                    </a>
+                    <a href="/settings" class="nav-link block text-white px-3 py-2 rounded-md text-base font-medium" data-page="settings">
+                        ⚙️ Settings
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 py-6">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Success/Error Messages -->
+    <div id="success-message" class="hidden fixed top-20 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50">
+        <div class="flex items-center">
+            <span class="mr-2">✅</span>
+            <span id="success-text">Success!</span>
+        </div>
+    </div>
+
+    <div id="error-message" class="hidden fixed top-20 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50">
+        <div class="flex items-center">
+            <span class="mr-2">❌</span>
+            <span id="error-text">Error!</span>
+        </div>
+    </div>
+
+    <!-- Shared JavaScript -->
+    <script>
+        // Global app state and utilities
+        window.FinanceApp = {
+            // Data management
+            expenses: JSON.parse(localStorage.getItem('expenses')) || [],
+            budgets: JSON.parse(localStorage.getItem('budgets')) || {},
+            categories: JSON.parse(localStorage.getItem('categories')) || [
+                { id: 'food', name: 'Food', icon: '🍽️', color: '#f87171' },
+                { id: 'transportation', name: 'Transportation', icon: '🚗', color: '#60a5fa' },
+                { id: 'entertainment', name: 'Entertainment', icon: '🎬', color: '#a78bfa' },
+                { id: 'utilities', name: 'Utilities', icon: '💡', color: '#fbbf24' },
+                { id: 'healthcare', name: 'Healthcare', icon: '🏥', color: '#34d399' },
+                { id: 'shopping', name: 'Shopping', icon: '🛍️', color: '#fb7185' },
+                { id: 'other', name: 'Other', icon: '📦', color: '#94a3b8' }
+            ],
+            settings: JSON.parse(localStorage.getItem('settings')) || {
+                currency: 'USD',
+                dateFormat: 'MM/DD/YYYY',
+                theme: 'light',
+                defaultView: 'monthly'
+            },
+
+            // Utility functions
+            saveData() {
+                localStorage.setItem('expenses', JSON.stringify(this.expenses));
+                localStorage.setItem('budgets', JSON.stringify(this.budgets));
+                localStorage.setItem('categories', JSON.stringify(this.categories));
+                localStorage.setItem('settings', JSON.stringify(this.settings));
+            },
+
+            showMessage(message, type = 'success') {
+                const successEl = document.getElementById('success-message');
+                const errorEl = document.getElementById('error-message');
+                
+                if (type === 'success') {
+                    document.getElementById('success-text').textContent = message;
+                    successEl.classList.remove('hidden');
+                    setTimeout(() => successEl.classList.add('hidden'), 3000);
+                } else {
+                    document.getElementById('error-text').textContent = message;
+                    errorEl.classList.remove('hidden');
+                    setTimeout(() => errorEl.classList.add('hidden'), 3000);
+                }
+            },
+
+            formatCurrency(amount) {
+                return new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: this.settings.currency
+                }).format(amount);
+            },
+
+            formatDate(date) {
+                return new Date(date).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                });
+            },
+
+            getCategoryById(id) {
+                return this.categories.find(cat => cat.id === id) || this.categories[this.categories.length - 1];
+            },
+
+            generateId() {
+                return Date.now() + Math.random().toString(36).substr(2, 9);
+            }
+        };
+
+        // Mobile menu toggle
+        document.addEventListener('DOMContentLoaded', function() {
+            const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+            const mobileMenu = document.getElementById('mobile-menu');
+            
+            if (mobileMenuBtn && mobileMenu) {
+                mobileMenuBtn.addEventListener('click', function() {
+                    mobileMenu.classList.toggle('hidden');
+                });
+            }
+
+            // Set active navigation
+            const currentPage = window.location.pathname.substring(1) || 'dashboard';
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                if (link.dataset.page === currentPage) {
+                    link.classList.add('active');
+                }
+            });
+        });
+    </script>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - Personal Finance Manager{% endblock %}
+
+{% block content %}
+<!-- Settings Sections -->
+<div class="space-y-8">
+    <!-- General Settings -->
+    <div class="glass rounded-2xl p-6">
+        <h2 class="text-2xl font-bold text-gray-800 mb-6">⚙️ General Settings</h2>
+        
+        <form id="settings-form" class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Currency</label>
+                    <select id="currency" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-primary focus:outline-none">
+                        <option value="USD">USD ($)</option>
+                        <option value="EUR">EUR (€)</option>
+                        <option value="GBP">GBP (£)</option>
+                        <option value="JPY">JPY (¥)</option>
+                        <option value="CAD">CAD (C$)</option>
+                        <option value="AUD">AUD (A$)</option>
+                        <option value="INR">INR (₹)</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Date Format</label>
+                    <select id="date-format" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-primary focus:outline-none">
+                        <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                        <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                        <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Default View</label>
+                    <select id="default-view" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-primary focus:outline-none">
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="yearly">Yearly</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Theme</label>
+                    <select id="theme" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-primary focus:outline-none">
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option>
+                        <option value="auto">Auto</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button type="submit" class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-secondary transition">
+                💾 Save Settings
+            </button>
+        </form>
+    </div>
+
+    <!-- Data Management -->
+    <div class="glass rounded-2xl p-6">
+        <h2 class="text-2xl font-bold text-gray-800 mb-6">📊 Data Management</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Export Data -->
+            <div class="border-2 border-gray-200 rounded-xl p-4">
+                <h3 class="text-lg font-semibold text-gray-800 mb-3">📥 Export Data</h3>
+                <p class="text-sm text-gray-600 mb-4">Download all your financial data as a JSON file for backup.</p>
+                <button onclick="exportAllData()" class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition">
+                    Download Backup
+                </button>
+            </div>
+            
+            <!-- Import Data -->
+            <div class="border-2 border-gray-200 rounded-xl p-4">
+                <h3 class="text-lg font-semibold text-gray-800 mb-3">📤 Import Data</h3>
+                <p class="text-sm text-gray-600 mb-4">Restore your financial data from a backup file.</p>
+                <input type="file" id="import-data-file" accept=".json" style="display: none;" onchange="importAllData(event)">
+                <button onclick="document.getElementById('import-data-file').click()" class="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition">
+                    Choose File
+                </button>
+            </div>
+            
+            <!-- Clear Data -->
+            <div class="border-2 border-red-200 rounded-xl p-4">
+                <h3 class="text-lg font-semibold text-red-800 mb-3">🗑️ Clear All Data</h3>
+                <p class="text-sm text-red-600 mb-4">Permanently delete all your financial data. This cannot be undone!</p>
+                <button onclick="clearAllData()" class="w-full bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 transition">
+                    Clear Everything
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="glass rounded-2xl p-6">
+        <h2 class="text-2xl font-bold text-gray-800 mb-6">📈 Your Statistics</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="text-center p-4 bg-blue-50 rounded-xl">
+                <div class="text-3xl font-bold text-blue-600" id="total-expenses-count">0</div>
+                <div class="text-sm text-gray-600">Total Expenses</div>
+            </div>
+            
+            <div class="text-center p-4 bg-green-50 rounded-xl">
+                <div class="text-3xl font-bold text-green-600" id="total-amount-spent">$0</div>
+                <div class="text-sm text-gray-600">Total Spent</div>
+            </div>
+            
+            <div class="text-center p-4 bg-purple-50 rounded-xl">
+                <div class="text-3xl font-bold text-purple-600" id="active-categories">0</div>
+                <div class="text-sm text-gray-600">Categories Used</div>
+            </div>
+            
+            <div class="text-center p-4 bg-yellow-50 rounded-xl">
+                <div class="text-3xl font-bold text-yellow-600" id="days-tracked">0</div>
+                <div class="text-sm text-gray-600">Days Tracked</div>
+            </div>
+        </div>
+        
+        <!-- Recent Activity -->
+        <div class="mt-8">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">🕒 Recent Activity</h3>
+            <div id="recent-activity" class="space-y-3">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- About -->
+    <div class="glass rounded-2xl p-6">
+        <h2 class="text-2xl font-bold text-gray-800 mb-6">ℹ️ About</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div>
+                <h3 class="text-lg font-semibold text-gray-800 mb-3">Personal Finance Manager</h3>
+                <p class="text-gray-600 mb-4">
+                    A comprehensive expense tracking and budget management application designed to help you 
+                    take control of your finances. Track expenses, set budgets, analyze spending patterns, 
+                    and make informed financial decisions.
+                </p>
+                
+                <div class="space-y-2 text-sm">
+                    <div><strong>Version:</strong> 2.0.0</div>
+                    <div><strong>Data Storage:</strong> Local Browser Storage</div>
+                    <div><strong>Last Updated:</strong> <span id="last-updated">-</span></div>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="text-lg font-semibold text-gray-800 mb-3">🌟 Features</h3>
+                <ul class="space-y-2 text-sm text-gray-600">
+                    <li>✅ Expense tracking with categories</li>
+                    <li>✅ Budget management and monitoring</li>
+                    <li>✅ Visual analytics and charts</li>
+                    <li>✅ Category customization</li>
+                    <li>✅ Data export and import</li>
+                    <li>✅ Mobile-responsive design</li>
+                    <li>✅ Real-time calculations</li>
+                    <li>✅ Search and filtering</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        loadSettings();
+        loadStatistics();
+        loadRecentActivity();
+        
+        document.getElementById('settings-form').addEventListener('submit', handleSettingsSubmit);
+    });
+
+    function loadSettings() {
+        document.getElementById('currency').value = FinanceApp.settings.currency;
+        document.getElementById('date-format').value = FinanceApp.settings.dateFormat;
+        document.getElementById('default-view').value = FinanceApp.settings.defaultView;
+        document.getElementById('theme').value = FinanceApp.settings.theme;
+    }
+
+    function handleSettingsSubmit(e) {
+        e.preventDefault();
+        
+        FinanceApp.settings.currency = document.getElementById('currency').value;
+        FinanceApp.settings.dateFormat = document.getElementById('date-format').value;
+        FinanceApp.settings.defaultView = document.getElementById('default-view').value;
+        FinanceApp.settings.theme = document.getElementById('theme').value;
+        
+        FinanceApp.saveData();
+        FinanceApp.showMessage('Settings saved successfully!');
+    }
+
+    function loadStatistics() {
+        // Total expenses
+        document.getElementById('total-expenses-count').textContent = FinanceApp.expenses.length;
+        
+        // Total amount spent
+        const totalSpent = FinanceApp.expenses.reduce((sum, expense) => sum + expense.amount, 0);
+        document.getElementById('total-amount-spent').textContent = FinanceApp.formatCurrency(totalSpent);
+        
+        // Active categories (categories that have expenses)
+        const usedCategories = [...new Set(FinanceApp.expenses.map(exp => exp.categoryId))];
+        document.getElementById('active-categories').textContent = usedCategories.length;
+        
+        // Days tracked
+        if (FinanceApp.expenses.length > 0) {
+            const dates = FinanceApp.expenses.map(exp => exp.date.split('T')[0]);
+            const uniqueDates = [...new Set(dates)];
+            document.getElementById('days-tracked').textContent = uniqueDates.length;
+        } else {
+            document.getElementById('days-tracked').textContent = '0';
+        }
+        
+        // Last updated
+        const lastExpense = FinanceApp.expenses.sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date))[0];
+        if (lastExpense) {
+            document.getElementById('last-updated').textContent = FinanceApp.formatDate(lastExpense.createdAt || lastExpense.date);
+        } else {
+            document.getElementById('last-updated').textContent = 'Never';
+        }
+    }
+
+    function loadRecentActivity() {
+        const recentExpenses = [...FinanceApp.expenses]
+            .sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date))
+            .slice(0, 5);
+        
+        const html = recentExpenses.map(expense => {
+            const category = FinanceApp.getCategoryById(expense.categoryId);
+            return `
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-lg">${category.icon}</span>
+                        <div>
+                            <div class="font-semibold text-gray-800">${expense.description}</div>
+                            <div class="text-sm text-gray-600">${category.name} • ${FinanceApp.formatDate(expense.date)}</div>
+                        </div>
+                    </div>
+                    <div class="font-bold text-primary">${FinanceApp.formatCurrency(expense.amount)}</div>
+                </div>
+            `;
+        }).join('');
+
+        document.getElementById('recent-activity').innerHTML = html || '<p class="text-gray-500 text-center">No recent activity</p>';
+    }
+
+    // Data management functions
+    window.exportAllData = function() {
+        const dataStr = JSON.stringify({
+            expenses: FinanceApp.expenses,
+            budgets: FinanceApp.budgets,
+            categories: FinanceApp.categories,
+            settings: FinanceApp.settings,
+            exportDate: new Date().toISOString(),
+            version: '2.0.0'
+        }, null, 2);
+        
+        const dataBlob = new Blob([dataStr], {type: 'application/json'});
+        const url = URL.createObjectURL(dataBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `finance-manager-backup-${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+        
+        FinanceApp.showMessage('Data exported successfully!');
+    };
+
+    window.importAllData = function(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    // Validate data structure
+                    if (!data.expenses || !Array.isArray(data.expenses)) {
+                        throw new Error('Invalid data format');
+                    }
+                    
+                    if (confirm('This will replace all your current data. Are you sure?')) {
+                        FinanceApp.expenses = data.expenses || [];
+                        FinanceApp.budgets = data.budgets || {};
+                        FinanceApp.categories = data.categories || FinanceApp.categories;
+                        FinanceApp.settings = {...FinanceApp.settings, ...data.settings};
+                        
+                        FinanceApp.saveData();
+                        loadSettings();
+                        loadStatistics();
+                        loadRecentActivity();
+                        
+                        FinanceApp.showMessage('Data imported successfully!');
+                    }
+                } catch (error) {
+                    FinanceApp.showMessage('Error importing data. Please check the file format.', 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        // Reset file input
+        event.target.value = '';
+    };
+
+    window.clearAllData = function() {
+        if (confirm('Are you sure you want to delete ALL data? This cannot be undone!')) {
+            if (confirm('Last chance! This will permanently delete all your expenses, budgets, categories, and settings.')) {
+                localStorage.clear();
+                
+                // Reset to defaults
+                FinanceApp.expenses = [];
+                FinanceApp.budgets = {};
+                FinanceApp.categories = [
+                    { id: 'food', name: 'Food', icon: '🍽️', color: '#f87171' },
+                    { id: 'transportation', name: 'Transportation', icon: '🚗', color: '#60a5fa' },
+                    { id: 'entertainment', name: 'Entertainment', icon: '🎬', color: '#a78bfa' },
+                    { id: 'utilities', name: 'Utilities', icon: '💡', color: '#fbbf24' },
+                    { id: 'healthcare', name: 'Healthcare', icon: '🏥', color: '#34d399' },
+                    { id: 'shopping', name: 'Shopping', icon: '🛍️', color: '#fb7185' },
+                    { id: 'other', name: 'Other', icon: '📦', color: '#94a3b8' }
+                ];
+                FinanceApp.settings = {
+                    currency: 'USD',
+                    dateFormat: 'MM/DD/YYYY',
+                    theme: 'light',
+                    defaultView: 'monthly'
+                };
+                
+                FinanceApp.saveData();
+                loadSettings();
+                loadStatistics();
+                loadRecentActivity();
+                
+                FinanceApp.showMessage('All data cleared successfully!');
+            }
+        }
+    };
+</script>
+{% endblock %}

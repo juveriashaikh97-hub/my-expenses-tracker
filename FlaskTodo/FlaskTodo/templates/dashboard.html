@@ -1,0 +1,519 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Personal Finance Manager{% endblock %}
+
+{% block content %}
+<!-- Quick Stats -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Total Balance -->
+    <div class="glass rounded-2xl p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-600 text-sm font-medium">Total Spent</p>
+                <p id="total-spent" class="text-3xl font-bold text-gray-900">$0.00</p>
+            </div>
+            <div class="bg-red-100 p-3 rounded-full">
+                <span class="text-2xl">💸</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- This Month -->
+    <div class="glass rounded-2xl p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-600 text-sm font-medium">This Month</p>
+                <p id="month-spent" class="text-3xl font-bold text-gray-900">$0.00</p>
+            </div>
+            <div class="bg-blue-100 p-3 rounded-full">
+                <span class="text-2xl">📅</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Average Daily -->
+    <div class="glass rounded-2xl p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-600 text-sm font-medium">Daily Avg</p>
+                <p id="daily-avg" class="text-3xl font-bold text-gray-900">$0.00</p>
+            </div>
+            <div class="bg-green-100 p-3 rounded-full">
+                <span class="text-2xl">📊</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Budget Status -->
+    <div class="glass rounded-2xl p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-600 text-sm font-medium">Budget Left</p>
+                <p id="budget-left" class="text-3xl font-bold text-gray-900">-</p>
+            </div>
+            <div class="bg-yellow-100 p-3 rounded-full">
+                <span class="text-2xl">🎯</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="grid lg:grid-cols-3 gap-8">
+    <!-- Add Expense Form -->
+    <div class="lg:col-span-1">
+        <div class="glass rounded-2xl shadow-xl p-6 mb-6">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">✨ Add Expense</h2>
+            <form id="expenseForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">💵 Amount</label>
+                    <input type="number" id="amount" step="0.01" min="0" required 
+                           placeholder="0.00"
+                           class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-primary focus:outline-none transition">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">📝 Description</label>
+                    <input type="text" id="description" required 
+                           placeholder="What did you spend on?"
+                           class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-primary focus:outline-none transition">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">📂 Category</label>
+                    <select id="category" required 
+                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-primary focus:outline-none transition">
+                        <option value="">Select a category</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">📅 Date</label>
+                    <input type="date" id="expense-date" required 
+                           class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-primary focus:outline-none transition">
+                </div>
+                <button type="submit" 
+                        class="w-full bg-gradient-to-r from-primary to-secondary text-white py-3 rounded-lg font-semibold hover:shadow-lg transition transform hover:-translate-y-0.5">
+                    Add Expense
+                </button>
+            </form>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="glass rounded-2xl p-6">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">⚡ Quick Actions</h3>
+            <div class="space-y-3">
+                <button onclick="exportData()" class="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition">
+                    📥 Export Data
+                </button>
+                <button onclick="clearAllData()" class="w-full bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg transition">
+                    🗑️ Clear All Data
+                </button>
+                <input type="file" id="import-file" accept=".json" style="display: none;" onchange="importData(event)">
+                <button onclick="document.getElementById('import-file').click()" class="w-full bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg transition">
+                    📤 Import Data
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Expenses List -->
+    <div class="lg:col-span-2">
+        <div class="glass rounded-2xl shadow-xl p-6">
+            <!-- Search and Filter -->
+            <div class="flex flex-col md:flex-row gap-4 mb-6">
+                <div class="flex-1">
+                    <input type="text" id="search-input" placeholder="🔍 Search expenses..."
+                           class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-primary focus:outline-none transition">
+                </div>
+                <div>
+                    <select id="filter-category" class="px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-primary focus:outline-none transition">
+                        <option value="">All Categories</option>
+                    </select>
+                </div>
+                <div>
+                    <select id="sort-by" class="px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-primary focus:outline-none transition">
+                        <option value="date-desc">Date (Newest)</option>
+                        <option value="date-asc">Date (Oldest)</option>
+                        <option value="amount-desc">Amount (High)</option>
+                        <option value="amount-asc">Amount (Low)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">📊 Recent Expenses</h2>
+                <div id="totalAmount" class="text-2xl font-bold text-primary">$0.00</div>
+            </div>
+            
+            <!-- No expenses message -->
+            <div id="no-expenses" class="text-center py-12">
+                <div class="text-6xl mb-4">💸</div>
+                <h3 class="text-xl font-semibold text-gray-700 mb-2">No expenses yet</h3>
+                <p class="text-gray-500">Add your first expense to get started!</p>
+            </div>
+
+            <!-- Expenses list -->
+            <div id="expenses-list" class="space-y-4 hidden"></div>
+            
+            <!-- Pagination -->
+            <div id="pagination" class="hidden flex justify-center mt-6">
+                <div class="flex space-x-2">
+                    <button id="prev-page" class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition">Previous</button>
+                    <span id="page-info" class="px-4 py-2"></span>
+                    <button id="next-page" class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition">Next</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Dashboard specific functionality
+    let currentPage = 1;
+    const itemsPerPage = 10;
+    let filteredExpenses = [];
+
+    // Initialize dashboard
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set today's date as default
+        document.getElementById('expense-date').value = new Date().toISOString().split('T')[0];
+        
+        loadCategories();
+        loadExpenses();
+        updateStats();
+        setupEventListeners();
+    });
+
+    function loadCategories() {
+        const categorySelect = document.getElementById('category');
+        const filterSelect = document.getElementById('filter-category');
+        
+        // Clear existing options (except default)
+        categorySelect.innerHTML = '<option value="">Select a category</option>';
+        filterSelect.innerHTML = '<option value="">All Categories</option>';
+        
+        FinanceApp.categories.forEach(cat => {
+            const option1 = new Option(`${cat.icon} ${cat.name}`, cat.id);
+            const option2 = new Option(`${cat.icon} ${cat.name}`, cat.id);
+            categorySelect.appendChild(option1);
+            filterSelect.appendChild(option2);
+        });
+    }
+
+    function setupEventListeners() {
+        // Add expense form
+        document.getElementById('expenseForm').addEventListener('submit', handleAddExpense);
+        
+        // Search and filter
+        document.getElementById('search-input').addEventListener('input', handleSearch);
+        document.getElementById('filter-category').addEventListener('change', handleFilter);
+        document.getElementById('sort-by').addEventListener('change', handleSort);
+        
+        // Pagination
+        document.getElementById('prev-page').addEventListener('click', () => changePage(-1));
+        document.getElementById('next-page').addEventListener('click', () => changePage(1));
+    }
+
+    function handleAddExpense(e) {
+        e.preventDefault();
+        
+        const amount = parseFloat(document.getElementById('amount').value);
+        const description = document.getElementById('description').value;
+        const categoryId = document.getElementById('category').value;
+        const date = document.getElementById('expense-date').value;
+
+        const expense = {
+            id: FinanceApp.generateId(),
+            amount: amount,
+            description: description,
+            categoryId: categoryId,
+            date: date + 'T00:00:00.000Z',
+            createdAt: new Date().toISOString()
+        };
+
+        FinanceApp.expenses.push(expense);
+        FinanceApp.saveData();
+        
+        loadExpenses();
+        updateStats();
+        document.getElementById('expenseForm').reset();
+        document.getElementById('expense-date').value = new Date().toISOString().split('T')[0];
+        
+        FinanceApp.showMessage('Expense added successfully!');
+    }
+
+    function handleSearch() {
+        const searchTerm = document.getElementById('search-input').value.toLowerCase();
+        applyFilters();
+    }
+
+    function handleFilter() {
+        applyFilters();
+    }
+
+    function handleSort() {
+        applyFilters();
+    }
+
+    function applyFilters() {
+        const searchTerm = document.getElementById('search-input').value.toLowerCase();
+        const filterCategory = document.getElementById('filter-category').value;
+        const sortBy = document.getElementById('sort-by').value;
+
+        // Filter expenses
+        filteredExpenses = FinanceApp.expenses.filter(expense => {
+            const matchesSearch = expense.description.toLowerCase().includes(searchTerm);
+            const matchesCategory = !filterCategory || expense.categoryId === filterCategory;
+            return matchesSearch && matchesCategory;
+        });
+
+        // Sort expenses
+        filteredExpenses.sort((a, b) => {
+            switch (sortBy) {
+                case 'date-desc':
+                    return new Date(b.date) - new Date(a.date);
+                case 'date-asc':
+                    return new Date(a.date) - new Date(b.date);
+                case 'amount-desc':
+                    return b.amount - a.amount;
+                case 'amount-asc':
+                    return a.amount - b.amount;
+                default:
+                    return new Date(b.date) - new Date(a.date);
+            }
+        });
+
+        currentPage = 1;
+        renderExpenses();
+    }
+
+    function loadExpenses() {
+        filteredExpenses = [...FinanceApp.expenses];
+        applyFilters();
+    }
+
+    function renderExpenses() {
+        const expensesListEl = document.getElementById('expenses-list');
+        const noExpensesEl = document.getElementById('no-expenses');
+        const totalAmountEl = document.getElementById('totalAmount');
+        const paginationEl = document.getElementById('pagination');
+
+        if (filteredExpenses.length === 0) {
+            expensesListEl.innerHTML = '';
+            expensesListEl.classList.add('hidden');
+            noExpensesEl.classList.remove('hidden');
+            paginationEl.classList.add('hidden');
+            totalAmountEl.textContent = FinanceApp.formatCurrency(0);
+            return;
+        }
+
+        noExpensesEl.classList.add('hidden');
+        expensesListEl.classList.remove('hidden');
+
+        // Calculate total for filtered results
+        const total = filteredExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+        totalAmountEl.textContent = FinanceApp.formatCurrency(total);
+
+        // Pagination
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const pageExpenses = filteredExpenses.slice(startIndex, endIndex);
+
+        // Render expenses
+        expensesListEl.innerHTML = pageExpenses.map(expense => {
+            const category = FinanceApp.getCategoryById(expense.categoryId);
+            return `
+                <div class="bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-gray-200 rounded-xl p-4 hover:shadow-lg transition-all duration-300 hover:border-primary/50">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-3 mb-2">
+                                <span class="text-2xl">${category.icon}</span>
+                                <div>
+                                    <h3 class="font-semibold text-gray-800">${expense.description}</h3>
+                                    <p class="text-sm text-gray-600">${category.name}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-2xl font-bold text-primary">${FinanceApp.formatCurrency(expense.amount)}</span>
+                                <span class="text-sm text-gray-500">${FinanceApp.formatDate(expense.date)}</span>
+                            </div>
+                        </div>
+                        <div class="flex space-x-2 ml-4">
+                            <button onclick="editExpense('${expense.id}')" 
+                                    class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg transition-colors">
+                                ✏️
+                            </button>
+                            <button onclick="deleteExpense('${expense.id}')" 
+                                    class="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg transition-colors">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        // Update pagination
+        const totalPages = Math.ceil(filteredExpenses.length / itemsPerPage);
+        if (totalPages > 1) {
+            paginationEl.classList.remove('hidden');
+            document.getElementById('page-info').textContent = `Page ${currentPage} of ${totalPages}`;
+            document.getElementById('prev-page').disabled = currentPage === 1;
+            document.getElementById('next-page').disabled = currentPage === totalPages;
+        } else {
+            paginationEl.classList.add('hidden');
+        }
+    }
+
+    function changePage(direction) {
+        const totalPages = Math.ceil(filteredExpenses.length / itemsPerPage);
+        const newPage = currentPage + direction;
+        
+        if (newPage >= 1 && newPage <= totalPages) {
+            currentPage = newPage;
+            renderExpenses();
+        }
+    }
+
+    function updateStats() {
+        const now = new Date();
+        const thisMonth = now.getMonth();
+        const thisYear = now.getFullYear();
+        
+        // Total spent
+        const totalSpent = FinanceApp.expenses.reduce((sum, expense) => sum + expense.amount, 0);
+        document.getElementById('total-spent').textContent = FinanceApp.formatCurrency(totalSpent);
+        
+        // This month
+        const monthExpenses = FinanceApp.expenses.filter(expense => {
+            const expenseDate = new Date(expense.date);
+            return expenseDate.getMonth() === thisMonth && expenseDate.getFullYear() === thisYear;
+        });
+        const monthSpent = monthExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+        document.getElementById('month-spent').textContent = FinanceApp.formatCurrency(monthSpent);
+        
+        // Daily average (last 30 days)
+        const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+        const recentExpenses = FinanceApp.expenses.filter(expense => new Date(expense.date) >= thirtyDaysAgo);
+        const dailyAvg = recentExpenses.length > 0 ? recentExpenses.reduce((sum, expense) => sum + expense.amount, 0) / 30 : 0;
+        document.getElementById('daily-avg').textContent = FinanceApp.formatCurrency(dailyAvg);
+        
+        // Budget status
+        const monthlyBudget = FinanceApp.budgets[`${thisYear}-${thisMonth.toString().padStart(2, '0')}`];
+        if (monthlyBudget) {
+            const budgetLeft = monthlyBudget - monthSpent;
+            document.getElementById('budget-left').textContent = FinanceApp.formatCurrency(budgetLeft);
+        } else {
+            document.getElementById('budget-left').textContent = '-';
+        }
+    }
+
+    // Global functions
+    window.deleteExpense = function(id) {
+        if (confirm('Are you sure you want to delete this expense?')) {
+            FinanceApp.expenses = FinanceApp.expenses.filter(expense => expense.id !== id);
+            FinanceApp.saveData();
+            loadExpenses();
+            updateStats();
+            FinanceApp.showMessage('Expense deleted successfully!');
+        }
+    };
+
+    window.editExpense = function(id) {
+        const expense = FinanceApp.expenses.find(e => e.id === id);
+        if (expense) {
+            document.getElementById('amount').value = expense.amount;
+            document.getElementById('description').value = expense.description;
+            document.getElementById('category').value = expense.categoryId;
+            document.getElementById('expense-date').value = expense.date.split('T')[0];
+            
+            // Remove the expense and let user re-add it
+            FinanceApp.expenses = FinanceApp.expenses.filter(e => e.id !== id);
+            FinanceApp.saveData();
+            loadExpenses();
+            updateStats();
+            
+            FinanceApp.showMessage('Expense loaded for editing. Make changes and add again.');
+        }
+    };
+
+    window.exportData = function() {
+        const dataStr = JSON.stringify({
+            expenses: FinanceApp.expenses,
+            budgets: FinanceApp.budgets,
+            categories: FinanceApp.categories,
+            settings: FinanceApp.settings,
+            exportDate: new Date().toISOString()
+        }, null, 2);
+        
+        const dataBlob = new Blob([dataStr], {type: 'application/json'});
+        const url = URL.createObjectURL(dataBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `finance-data-${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+        
+        FinanceApp.showMessage('Data exported successfully!');
+    };
+
+    window.importData = function(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    if (confirm('This will replace all your current data. Are you sure?')) {
+                        FinanceApp.expenses = data.expenses || [];
+                        FinanceApp.budgets = data.budgets || {};
+                        FinanceApp.categories = data.categories || FinanceApp.categories;
+                        FinanceApp.settings = {...FinanceApp.settings, ...data.settings};
+                        
+                        FinanceApp.saveData();
+                        loadCategories();
+                        loadExpenses();
+                        updateStats();
+                        
+                        FinanceApp.showMessage('Data imported successfully!');
+                    }
+                } catch (error) {
+                    FinanceApp.showMessage('Error importing data. Please check the file format.', 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+    };
+
+    window.clearAllData = function() {
+        if (confirm('Are you sure you want to delete ALL data? This cannot be undone!')) {
+            if (confirm('Last chance! This will permanently delete all your expenses, budgets, and settings.')) {
+                localStorage.clear();
+                FinanceApp.expenses = [];
+                FinanceApp.budgets = {};
+                FinanceApp.categories = [
+                    { id: 'food', name: 'Food', icon: '🍽️', color: '#f87171' },
+                    { id: 'transportation', name: 'Transportation', icon: '🚗', color: '#60a5fa' },
+                    { id: 'entertainment', name: 'Entertainment', icon: '🎬', color: '#a78bfa' },
+                    { id: 'utilities', name: 'Utilities', icon: '💡', color: '#fbbf24' },
+                    { id: 'healthcare', name: 'Healthcare', icon: '🏥', color: '#34d399' },
+                    { id: 'shopping', name: 'Shopping', icon: '🛍️', color: '#fb7185' },
+                    { id: 'other', name: 'Other', icon: '📦', color: '#94a3b8' }
+                ];
+                FinanceApp.settings = {
+                    currency: 'USD',
+                    dateFormat: 'MM/DD/YYYY',
+                    theme: 'light',
+                    defaultView: 'monthly'
+                };
+                
+                loadCategories();
+                loadExpenses();
+                updateStats();
+                
+                FinanceApp.showMessage('All data cleared successfully!');
+            }
+        }
+    };
+</script>
+{% endblock %}

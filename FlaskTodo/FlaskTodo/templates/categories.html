@@ -1,0 +1,337 @@
+{% extends "base.html" %}
+
+{% block title %}Categories - Personal Finance Manager{% endblock %}
+
+{% block content %}
+<!-- Categories Management -->
+<div class="glass rounded-2xl p-6 mb-8">
+    <div class="flex flex-col md:flex-row gap-4 items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">📂 Category Management</h1>
+        <button onclick="openCategoryModal()" class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-secondary transition">
+            ➕ Add New Category
+        </button>
+    </div>
+    
+    <div id="categories-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <!-- Will be populated by JavaScript -->
+    </div>
+</div>
+
+<!-- Category Analytics -->
+<div class="glass rounded-2xl p-6">
+    <h2 class="text-xl font-bold text-gray-800 mb-6">📊 Category Spending Analysis</h2>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Category Chart -->
+        <div>
+            <h3 class="text-lg font-semibold text-gray-700 mb-4">Spending Distribution</h3>
+            <div class="chart-container">
+                <canvas id="categoryAnalysisChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Category Stats -->
+        <div>
+            <h3 class="text-lg font-semibold text-gray-700 mb-4">Category Statistics</h3>
+            <div id="category-stats" class="space-y-4">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Category Modal -->
+<div id="category-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="glass rounded-2xl p-6 w-full max-w-md">
+        <h3 id="modal-title" class="text-xl font-bold text-gray-800 mb-4">Add New Category</h3>
+        <form id="category-form">
+            <input type="hidden" id="category-id">
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Category Name</label>
+                <input type="text" id="category-name" required placeholder="e.g., Groceries" 
+                       class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-primary focus:outline-none">
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Icon (Emoji)</label>
+                <div class="flex items-center space-x-2">
+                    <input type="text" id="category-icon" required placeholder="🛒" maxlength="2"
+                           class="w-20 px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-primary focus:outline-none text-center text-2xl">
+                    <div class="flex-1">
+                        <div class="grid grid-cols-6 gap-2">
+                            <button type="button" onclick="selectIcon('🍽️')" class="p-2 border rounded hover:bg-gray-100 text-xl">🍽️</button>
+                            <button type="button" onclick="selectIcon('🚗')" class="p-2 border rounded hover:bg-gray-100 text-xl">🚗</button>
+                            <button type="button" onclick="selectIcon('🎬')" class="p-2 border rounded hover:bg-gray-100 text-xl">🎬</button>
+                            <button type="button" onclick="selectIcon('💡')" class="p-2 border rounded hover:bg-gray-100 text-xl">💡</button>
+                            <button type="button" onclick="selectIcon('🏥')" class="p-2 border rounded hover:bg-gray-100 text-xl">🏥</button>
+                            <button type="button" onclick="selectIcon('🛍️')" class="p-2 border rounded hover:bg-gray-100 text-xl">🛍️</button>
+                            <button type="button" onclick="selectIcon('🏠')" class="p-2 border rounded hover:bg-gray-100 text-xl">🏠</button>
+                            <button type="button" onclick="selectIcon('💼')" class="p-2 border rounded hover:bg-gray-100 text-xl">💼</button>
+                            <button type="button" onclick="selectIcon('✈️')" class="p-2 border rounded hover:bg-gray-100 text-xl">✈️</button>
+                            <button type="button" onclick="selectIcon('🎮')" class="p-2 border rounded hover:bg-gray-100 text-xl">🎮</button>
+                            <button type="button" onclick="selectIcon('📚')" class="p-2 border rounded hover:bg-gray-100 text-xl">📚</button>
+                            <button type="button" onclick="selectIcon('💳')" class="p-2 border rounded hover:bg-gray-100 text-xl">💳</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Color</label>
+                <div class="flex items-center space-x-2">
+                    <input type="color" id="category-color" required value="#667eea"
+                           class="w-16 h-10 border-2 border-gray-200 rounded-lg">
+                    <div class="flex-1 grid grid-cols-6 gap-2">
+                        <button type="button" onclick="selectColor('#f87171')" class="w-8 h-8 rounded-full bg-red-400 border-2 border-gray-300"></button>
+                        <button type="button" onclick="selectColor('#60a5fa')" class="w-8 h-8 rounded-full bg-blue-400 border-2 border-gray-300"></button>
+                        <button type="button" onclick="selectColor('#34d399')" class="w-8 h-8 rounded-full bg-green-400 border-2 border-gray-300"></button>
+                        <button type="button" onclick="selectColor('#fbbf24')" class="w-8 h-8 rounded-full bg-yellow-400 border-2 border-gray-300"></button>
+                        <button type="button" onclick="selectColor('#a78bfa')" class="w-8 h-8 rounded-full bg-purple-400 border-2 border-gray-300"></button>
+                        <button type="button" onclick="selectColor('#fb7185')" class="w-8 h-8 rounded-full bg-pink-400 border-2 border-gray-300"></button>
+                    </div>
+                </div>
+            </div>
+            <div class="flex gap-4">
+                <button type="button" onclick="closeCategoryModal()" class="flex-1 bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600 transition">Cancel</button>
+                <button type="submit" class="flex-1 bg-primary text-white py-2 rounded-lg hover:bg-secondary transition">Save Category</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let categoryChart;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeCategoryChart();
+        loadCategories();
+        loadCategoryAnalytics();
+        
+        document.getElementById('category-form').addEventListener('submit', handleCategorySubmit);
+    });
+
+    function initializeCategoryChart() {
+        const ctx = document.getElementById('categoryAnalysisChart').getContext('2d');
+        categoryChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: [],
+                datasets: [{
+                    data: [],
+                    backgroundColor: [],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+
+    function loadCategories() {
+        const grid = document.getElementById('categories-grid');
+        
+        const html = FinanceApp.categories.map(category => {
+            // Calculate spending for this category
+            const categoryExpenses = FinanceApp.expenses.filter(exp => exp.categoryId === category.id);
+            const totalSpent = categoryExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+            const expenseCount = categoryExpenses.length;
+            
+            // Check if it's a default category (can't be deleted)
+            const isDefault = ['food', 'transportation', 'entertainment', 'utilities', 'healthcare', 'shopping', 'other'].includes(category.id);
+            
+            return `
+                <div class="bg-white border-2 border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300 hover:border-primary/50">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-12 h-12 rounded-full flex items-center justify-center text-2xl" 
+                                 style="background-color: ${category.color}20; border: 2px solid ${category.color}">
+                                ${category.icon}
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-gray-800">${category.name}</h3>
+                                <p class="text-sm text-gray-600">${expenseCount} expenses</p>
+                            </div>
+                        </div>
+                        <div class="flex space-x-1">
+                            <button onclick="editCategory('${category.id}')" 
+                                    class="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition">
+                                ✏️
+                            </button>
+                            ${!isDefault ? `
+                                <button onclick="deleteCategory('${category.id}')" 
+                                        class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition">
+                                    🗑️
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">Total Spent</span>
+                            <span class="font-bold text-primary">${FinanceApp.formatCurrency(totalSpent)}</span>
+                        </div>
+                        
+                        ${expenseCount > 0 ? `
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">Avg per Expense</span>
+                                <span class="text-sm font-medium">${FinanceApp.formatCurrency(totalSpent / expenseCount)}</span>
+                            </div>
+                        ` : ''}
+                        
+                        <div class="w-full bg-gray-200 rounded-full h-2 mt-3">
+                            <div class="h-2 rounded-full" 
+                                 style="width: ${Math.min((totalSpent / Math.max(...FinanceApp.categories.map(c => {
+                                     const cExpenses = FinanceApp.expenses.filter(e => e.categoryId === c.id);
+                                     return cExpenses.reduce((sum, e) => sum + e.amount, 0);
+                                 }))) * 100, 100)}%; background-color: ${category.color}"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        grid.innerHTML = html;
+    }
+
+    function loadCategoryAnalytics() {
+        // Update chart
+        const categoryTotals = {};
+        
+        FinanceApp.expenses.forEach(expense => {
+            const category = FinanceApp.getCategoryById(expense.categoryId);
+            if (categoryTotals[category.id]) {
+                categoryTotals[category.id].amount += expense.amount;
+                categoryTotals[category.id].count += 1;
+            } else {
+                categoryTotals[category.id] = {
+                    name: category.name,
+                    icon: category.icon,
+                    amount: expense.amount,
+                    count: 1,
+                    color: category.color
+                };
+            }
+        });
+
+        const sorted = Object.values(categoryTotals).sort((a, b) => b.amount - a.amount);
+        
+        categoryChart.data.labels = sorted.map(cat => cat.name);
+        categoryChart.data.datasets[0].data = sorted.map(cat => cat.amount);
+        categoryChart.data.datasets[0].backgroundColor = sorted.map(cat => cat.color);
+        categoryChart.update();
+
+        // Update stats
+        const statsHtml = sorted.map((cat, index) => {
+            const percentage = sorted.length > 0 ? (cat.amount / sorted.reduce((sum, c) => sum + c.amount, 0)) * 100 : 0;
+            return `
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center" 
+                             style="background-color: ${cat.color}">
+                            <span class="text-lg">${cat.icon}</span>
+                        </div>
+                        <div>
+                            <div class="font-semibold text-gray-800">${cat.name}</div>
+                            <div class="text-sm text-gray-600">${cat.count} transactions</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="font-bold text-primary">${FinanceApp.formatCurrency(cat.amount)}</div>
+                        <div class="text-sm text-gray-600">${percentage.toFixed(1)}%</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        document.getElementById('category-stats').innerHTML = statsHtml || '<p class="text-gray-500 text-center">No expense data available</p>';
+    }
+
+    function handleCategorySubmit(e) {
+        e.preventDefault();
+        
+        const id = document.getElementById('category-id').value;
+        const name = document.getElementById('category-name').value;
+        const icon = document.getElementById('category-icon').value;
+        const color = document.getElementById('category-color').value;
+        
+        if (id) {
+            // Edit existing category
+            const categoryIndex = FinanceApp.categories.findIndex(cat => cat.id === id);
+            if (categoryIndex !== -1) {
+                FinanceApp.categories[categoryIndex] = { id, name, icon, color };
+            }
+        } else {
+            // Add new category
+            const newId = name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+            FinanceApp.categories.push({ id: newId, name, icon, color });
+        }
+        
+        FinanceApp.saveData();
+        loadCategories();
+        loadCategoryAnalytics();
+        closeCategoryModal();
+        
+        FinanceApp.showMessage(id ? 'Category updated successfully!' : 'Category added successfully!');
+    }
+
+    // Modal functions
+    window.openCategoryModal = function() {
+        document.getElementById('modal-title').textContent = 'Add New Category';
+        document.getElementById('category-modal').classList.remove('hidden');
+    };
+
+    window.closeCategoryModal = function() {
+        document.getElementById('category-modal').classList.add('hidden');
+        document.getElementById('category-form').reset();
+        document.getElementById('category-id').value = '';
+        document.getElementById('category-color').value = '#667eea';
+    };
+
+    window.editCategory = function(categoryId) {
+        const category = FinanceApp.categories.find(cat => cat.id === categoryId);
+        if (category) {
+            document.getElementById('modal-title').textContent = 'Edit Category';
+            document.getElementById('category-id').value = category.id;
+            document.getElementById('category-name').value = category.name;
+            document.getElementById('category-icon').value = category.icon;
+            document.getElementById('category-color').value = category.color;
+            document.getElementById('category-modal').classList.remove('hidden');
+        }
+    };
+
+    window.deleteCategory = function(categoryId) {
+        // Check if category is being used
+        const isUsed = FinanceApp.expenses.some(expense => expense.categoryId === categoryId);
+        
+        if (isUsed) {
+            FinanceApp.showMessage('Cannot delete category that has expenses. Move expenses to another category first.', 'error');
+            return;
+        }
+        
+        if (confirm('Are you sure you want to delete this category?')) {
+            FinanceApp.categories = FinanceApp.categories.filter(cat => cat.id !== categoryId);
+            FinanceApp.saveData();
+            loadCategories();
+            loadCategoryAnalytics();
+            FinanceApp.showMessage('Category deleted successfully!');
+        }
+    };
+
+    window.selectIcon = function(icon) {
+        document.getElementById('category-icon').value = icon;
+    };
+
+    window.selectColor = function(color) {
+        document.getElementById('category-color').value = color;
+    };
+</script>
+{% endblock %}
